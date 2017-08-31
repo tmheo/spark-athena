@@ -14,7 +14,7 @@ package object athena {
       val options = properties.asScala
       // explicit url and dbtable should override all
       options += (JDBCOptions.JDBC_TABLE_NAME -> table)
-      reader.format("com.samsung.mobile.game.spark.athena").options(options).load()
+      reader.format("io.github.tmheo.spark.athena").options(options).load()
     }
 
     def athena(url: String, table: String, properties: Properties): DataFrame = {
