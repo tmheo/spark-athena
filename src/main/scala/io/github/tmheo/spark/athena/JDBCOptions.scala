@@ -20,6 +20,8 @@ package io.github.tmheo.spark.athena
 import java.sql.{Connection, DriverManager}
 import java.util.{Locale, Properties}
 
+import com.amazonaws.athena.jdbc.shaded.com.amazonaws.regions.Regions
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 
 /**
@@ -57,16 +59,37 @@ class JDBCOptions(
     val properties = new Properties()
     parameters.originalMap.filterKeys(key => !jdbcOptionNames(key.toLowerCase(Locale.ROOT)))
       .foreach { case (k, v) => properties.setProperty(k, v) }
+
+    if (!properties.containsKey("s3_staging_dir")) {
+      val iamClient = AmazonIdentityManagementClientBuilder.defaultClient
+      val accountNumber = iamClient.listRoles().getRoles.get(0).getArn.split(":")(4)
+      val region = if (parameters.get(ATHENA_REGION).isDefined) {
+        parameters(ATHENA_REGION)
+      } else {
+        Regions.getCurrentRegion.getName
+      }
+      val s3StagingDir = s"s3://aws-athena-query-results-${accountNumber}-${region}/"
+      properties.setProperty("s3_staging_dir", s3StagingDir)
+    }
+
+    if (!properties.containsKey("user") && !properties.containsKey("password")) {
+      properties.setProperty("aws_credentials_provider_class", "com.amazonaws.auth.InstanceProfileCredentialsProvider")
+    }
+
     properties
   }
 
   // ------------------------------------------------------------
   // Required parameters
   // ------------------------------------------------------------
-  require(parameters.isDefinedAt(JDBC_URL), s"Option '$JDBC_URL' is required.")
   require(parameters.isDefinedAt(JDBC_TABLE_NAME), s"Option '$JDBC_TABLE_NAME' is required.")
   // a JDBC URL
-  val url = parameters(JDBC_URL)
+  val url = if (parameters.get(ATHENA_REGION).isDefined) {
+    s"jdbc:awsathena://athena.${parameters(ATHENA_REGION)}.amazonaws.com:443"
+  } else {
+    s"jdbc:awsathena://athena.${Regions.getCurrentRegion.getName}.amazonaws.com:443"
+  }
+
   // name of table
   val table = parameters(JDBC_TABLE_NAME)
 
@@ -74,7 +97,12 @@ class JDBCOptions(
   // Optional parameters
   // ------------------------------------------------------------
   val driverClass = {
-    val userSpecifiedDriverClass = parameters.get(JDBC_DRIVER_CLASS)
+    val userSpecifiedDriverClass = if (parameters.get(JDBC_DRIVER_CLASS).isDefined) {
+      parameters.get(JDBC_DRIVER_CLASS)
+    } else {
+      Option("com.amazonaws.athena.jdbc.AthenaDriver")
+    }
+    //parameters.get(JDBC_DRIVER_CLASS)
     userSpecifiedDriverClass.foreach(DriverRegistry.register)
 
     // Performing this part of the logic on the driver guards against the corner-case where the
@@ -158,4 +186,7 @@ object JDBCOptions {
   val JDBC_CREATE_TABLE_COLUMN_TYPES = newOption("createTableColumnTypes")
   val JDBC_BATCH_INSERT_SIZE = newOption("batchsize")
   val JDBC_TXN_ISOLATION_LEVEL = newOption("isolationLevel")
+
+  val ATHENA_REGION = newOption("region")
+
 }

@@ -6,7 +6,7 @@
 
     <groupId>io.github.tmheo</groupId>
     <artifactId>spark-athena</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -14,6 +14,7 @@
         <scala.version>2.11.8</scala.version>
         <spark.version>2.2.0</spark.version>
         <log4j.version>1.2.17</log4j.version>
+        <aws-java-sdk.version>1.11.185</aws-java-sdk.version>
         <athena-jdbc.version>1.1.0</athena-jdbc.version>
     </properties>
 
@@ -50,6 +51,19 @@
             <version>${log4j.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws-java-sdk.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-iam</artifactId>
+            <version>${aws-java-sdk.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
 
         <dependency>
             <groupId>com.amazonaws.athena.jdbc</groupId>

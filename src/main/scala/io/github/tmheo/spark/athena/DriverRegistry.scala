@@ -25,11 +25,11 @@ import org.apache.spark.internal.Logging
 import scala.collection.mutable
 
 /**
- * java.sql.DriverManager is always loaded by bootstrap classloader,
- * so it can't load JDBC drivers accessible by Spark ClassLoader.
- *
- * To solve the problem, drivers from user-supplied jars are wrapped into thin wrapper.
- */
+  * java.sql.DriverManager is always loaded by bootstrap classloader,
+  * so it can't load JDBC drivers accessible by Spark ClassLoader.
+  *
+  * To solve the problem, drivers from user-supplied jars are wrapped into thin wrapper.
+  */
 object DriverRegistry extends Logging {
 
   private val wrapperMap: mutable.Map[String, DriverWrapper] = mutable.Map.empty
